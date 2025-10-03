@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - OrbitIMS</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/toastr/toastr.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/OrbitIMS.styles.css" asp-append-version="true" />
 </head>
@@ -22,9 +23,9 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+                        @* <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Demo" asp-action="Index">Toastr Demo</a>
+                        </li> *@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Categories" asp-action="Index">Category</a>
                         </li>
@@ -39,6 +40,9 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Index">Order</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
                 </div>
@@ -58,7 +62,69 @@
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/toastr/toastr.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- Toastr Global Configuration -->
+    <script>
+        // Configure Toastr globally
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "newestOnTop": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "preventDuplicates": false,
+            "onclick": null,
+            "showDuration": "300",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut"
+        };
+
+        // Global notification functions
+        window.showSuccess = function(message, title = 'Success') {
+            toastr.success(message, title);
+        };
+
+        window.showError = function(message, title = 'Error') {
+            toastr.error(message, title);
+        };
+
+        window.showWarning = function(message, title = 'Warning') {
+            toastr.warning(message, title);
+        };
+
+        window.showInfo = function(message, title = 'Info') {
+            toastr.info(message, title);
+        };
+
+        // Check for TempData notifications on page load
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <text>showSuccess('@Html.Raw(TempData["SuccessMessage"])');</text>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <text>showError('@Html.Raw(TempData["ErrorMessage"])');</text>
+        }
+
+        @if (TempData["WarningMessage"] != null)
+        {
+            <text>showWarning('@Html.Raw(TempData["WarningMessage"])');</text>
+        }
+
+        @if (TempData["InfoMessage"] != null)
+        {
+            <text>showInfo('@Html.Raw(TempData["InfoMessage"])');</text>
+        }
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

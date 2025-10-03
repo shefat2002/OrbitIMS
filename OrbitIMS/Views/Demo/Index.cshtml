@@ -1,0 +1,158 @@
+@{
+    ViewData["Title"] = "Toastr Notification Demo";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Toastr Notification System Demo</h4>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Test different types of notifications using the buttons below.</p>
+                    
+                    <h5>Server-Side Notifications (Page Reload)</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <form asp-action="TestSuccess" method="post">
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="fas fa-check"></i> Success
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-3">
+                            <form asp-action="TestError" method="post">
+                                <button type="submit" class="btn btn-danger w-100">
+                                    <i class="fas fa-times"></i> Error
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-3">
+                            <form asp-action="TestWarning" method="post">
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="fas fa-exclamation-triangle"></i> Warning
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-3">
+                            <form asp-action="TestInfo" method="post">
+                                <button type="submit" class="btn btn-info w-100">
+                                    <i class="fas fa-info-circle"></i> Info
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <h5>Client-Side Notifications (No Page Reload)</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-success w-100" onclick="showSuccess('This is a client-side success notification!')">
+                                <i class="fas fa-check"></i> Client Success
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-danger w-100" onclick="showError('This is a client-side error notification!')">
+                                <i class="fas fa-times"></i> Client Error
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-warning w-100" onclick="showWarning('This is a client-side warning notification!')">
+                                <i class="fas fa-exclamation-triangle"></i> Client Warning
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-info w-100" onclick="showInfo('This is a client-side info notification!')">
+                                <i class="fas fa-info-circle"></i> Client Info
+                            </button>
+                        </div>
+                    </div>
+
+                    <h5>AJAX Notifications</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-primary w-100" onclick="testAjaxSuccess()">
+                                <i class="fas fa-sync"></i> Test AJAX Success
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-secondary w-100" onclick="testAjaxError()">
+                                <i class="fas fa-sync"></i> Test AJAX Error
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h5>Usage Examples</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Server-Side (Controller)</h6>
+                            <pre><code>// In your controller action
+this.SetSuccessMessage("Success message");
+this.SetErrorMessage("Error message");
+this.SetWarningMessage("Warning message");
+this.SetInfoMessage("Info message");</code></pre>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Client-Side (JavaScript)</h6>
+                            <pre><code>// In your JavaScript
+showSuccess("Success message");
+showError("Error message");  
+showWarning("Warning message");
+showInfo("Info message");</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function testAjaxSuccess() {
+            fetch('/Demo/TestAjaxSuccess', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess(data.message);
+                } else {
+                    showError(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('An error occurred during the AJAX request.');
+            });
+        }
+
+        function testAjaxError() {
+            fetch('/Demo/TestAjaxError', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess(data.message);
+                } else {
+                    showError(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('An error occurred during the AJAX request.');
+            });
+        }
+    </script>
+}

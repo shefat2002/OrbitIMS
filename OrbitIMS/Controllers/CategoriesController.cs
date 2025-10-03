@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OrbitIMS.Data;
+using OrbitIMS.Helpers;
 
 namespace OrbitIMS.Controllers
 {
@@ -16,136 +17,102 @@ namespace OrbitIMS.Controllers
             return View(await _context.Categories.ToListAsync());
         }
 
-        public async Task<IActionResult> Details(int? id)
+        // AJAX method to get category data for editing
+        [HttpGet]
+        public async Task<IActionResult> GetCategory(int id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var categoty = await _context.Categories
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (categoty == null)
-            {
-                return NotFound();
-            }
-
-            return View(categoty);
-        }
-
-        public IActionResult Create()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Description")] Category category)
-        {
-            if (ModelState.IsValid)
-            {
-                category.CreatedAt = DateTime.Now;
-                category.CreatedBy = User.Identity.Name ?? "Default";
-                category.IsActive = true;
-                _context.Add(category);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            else
-            {
-                string msg = "";
-                foreach (var err in ModelState.Values)
-                {
-                    foreach (var ms in err.Errors)
-                    {
-                        msg += $"{ms.ErrorMessage}\n";
-                    }
-                }
-                ModelState.AddModelError("", msg);
-            }
-            return View(category);
-        }
-
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
             var category = await _context.Categories.FindAsync(id);
             if (category == null)
             {
-                return NotFound();
+                return Json(NotificationHelper.CreateNotificationResponse(false, "Category not found"));
             }
-            return View(category);
+            return Json(NotificationHelper.CreateNotificationResponse(true, "Category loaded successfully", category));
         }
 
+        // AJAX method to create category
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Name,Description,Id,CreatedAt,CreatedBy,UpdatedAt,UpdatedBy,IsActive")] Category category)
+        public async Task<IActionResult> CreateCategory([FromBody] Category category)
         {
-            if (id != category.Id)
+            try
             {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
+                if (ModelState.IsValid)
                 {
-                    _context.Update(category);
+                    category.CreatedAt = DateTime.Now;
+                    category.CreatedBy = User.Identity.Name ?? "Default";
+                    category.IsActive = true;
+                    _context.Add(category);
                     await _context.SaveChangesAsync();
+                    return Json(NotificationHelper.CreateNotificationResponse(true, "Category created successfully", category));
                 }
-                catch (DbUpdateConcurrencyException)
+                else
                 {
-                    if (!CategoryExists(category.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                    return Json(NotificationHelper.CreateNotificationResponse(false, string.Join(", ", errors)));
                 }
-                return RedirectToAction(nameof(Index));
             }
-            return View(category);
-        }
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
+            catch (Exception ex)
             {
-                return NotFound();
+                return Json(NotificationHelper.CreateNotificationResponse(false, "Error creating category: " + ex.Message));
             }
-
-            var category = await _context.Categories
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (category == null)
-            {
-                return NotFound();
-            }
-
-            return View(category);
         }
 
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        // AJAX method to update category
+        [HttpPost]
+        public async Task<IActionResult> UpdateCategory([FromBody] Category category)
         {
-            var category = await _context.Categories.FindAsync(id);
-            if (category != null)
+            try
             {
+                if (ModelState.IsValid)
+                {
+                    var existingCategory = await _context.Categories.FindAsync(category.Id);
+                    if (existingCategory == null)
+                    {
+                        return Json(NotificationHelper.CreateNotificationResponse(false, "Category not found"));
+                    }
+
+                    existingCategory.Name = category.Name;
+                    existingCategory.Description = category.Description;
+                    existingCategory.UpdatedAt = DateTime.Now;
+                    existingCategory.UpdatedBy = User.Identity.Name ?? "Default";
+
+                    _context.Update(existingCategory);
+                    await _context.SaveChangesAsync();
+                    return Json(NotificationHelper.CreateNotificationResponse(true, "Category updated successfully", existingCategory));
+                }
+                else
+                {
+                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                    return Json(NotificationHelper.CreateNotificationResponse(false, string.Join(", ", errors)));
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(NotificationHelper.CreateNotificationResponse(false, "Error updating category: " + ex.Message));
+            }
+        }
+
+        // AJAX method to delete category
+        [HttpPost]
+        public async Task<IActionResult> DeleteCategory(int id)
+        {
+            try
+            {
+                var category = await _context.Categories.FindAsync(id);
+                if (category == null)
+                {
+                    return Json(NotificationHelper.CreateNotificationResponse(false, "Category not found"));
+                }
+
                 _context.Categories.Remove(category);
+                await _context.SaveChangesAsync();
+                return Json(NotificationHelper.CreateNotificationResponse(true, "Category deleted successfully"));
             }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            catch (Exception ex)
+            {
+                return Json(NotificationHelper.CreateNotificationResponse(false, "Error deleting category: " + ex.Message));
+            }
         }
 
-        private bool CategoryExists(int id)
-        {
-            return _context.Categories.Any(e => e.Id == id);
-        }
+        
     }
 }
