@@ -11,7 +11,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="card-title mb-0">Categories</h4>
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#categoryModal" onclick="openCreateModal()">
-                        <i class="fas fa-plus"></i> Add New Category
+                        <i class="fas fa-plus"></i> Add
                     </button>
                 </div>
                 <div class="card-body">
@@ -127,33 +127,17 @@
     <script>
         let currentCategoryId = 0;
 
-        // Show loading spinner
-        function showSpinner(buttonId) {
-            const button = document.getElementById(buttonId);
-            const spinner = button.querySelector('.spinner-border');
-            spinner.classList.remove('d-none');
-            button.disabled = true;
-        }
-
-        // Hide loading spinner
-        function hideSpinner(buttonId) {
-            const button = document.getElementById(buttonId);
-            const spinner = button.querySelector('.spinner-border');
-            spinner.classList.add('d-none');
-            button.disabled = false;
-        }
-
         // Clear form validation
         function clearValidation() {
-            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-            document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+            $('.is-invalid').removeClass('is-invalid');
+            $('.invalid-feedback').text('');
         }
 
         // Open create modal
         function openCreateModal() {
-            document.getElementById('categoryModalLabel').textContent = 'Add New Category';
-            document.getElementById('categoryForm').reset();
-            document.getElementById('categoryId').value = '0';
+            $('#categoryModalLabel').text('Add New Category');
+            $('#categoryForm')[0].reset();
+            $('#categoryId').val('0');
             currentCategoryId = 0;
             clearValidation();
         }
@@ -161,40 +145,39 @@
         // Open edit modal
         function openEditModal(id) {
             currentCategoryId = id;
-            document.getElementById('categoryModalLabel').textContent = 'Edit Category';
+            $('#categoryModalLabel').text('Edit Category');
             
             // Get category data
-            fetch(`/Categories/GetCategory/${id}`)
-                .then(response => response.json())
-                .then(data => {
+            $.ajax({
+                url: `/Categories/GetCategory/${id}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
                     if (data.success) {
-                        document.getElementById('categoryId').value = data.data.id;
-                        document.getElementById('categoryName').value = data.data.name;
-                        document.getElementById('categoryDescription').value = data.data.description;
+                        $('#categoryId').val(data.data.id);
+                        $('#categoryName').val(data.data.name);
+                        $('#categoryDescription').val(data.data.description);
                         clearValidation();
                         
                         // Show modal
-                        const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
-                        modal.show();
+                        $('#categoryModal').modal('show');
                     } else {
                         showError(data.message);
                     }
-                })
-                .catch(error => {
+                },
+                error: function(xhr, status, error) {
                     console.error('Error:', error);
                     showError('Error loading category data');
-                });
+                }
+            });
         }
 
         // Save category (create or update)
         function saveCategory() {
-            const form = document.getElementById('categoryForm');
-            const formData = new FormData(form);
-            
             const categoryData = {
-                Id: parseInt(document.getElementById('categoryId').value),
-                Name: formData.get('Name'),
-                Description: formData.get('Description')
+                Id: parseInt($('#categoryId').val()),
+                Name: $('#categoryName').val(),
+                Description: $('#categoryDescription').val()
             };
 
             // Client-side validation
@@ -202,8 +185,8 @@
             let isValid = true;
 
             if (!categoryData.Name || categoryData.Name.trim() === '') {
-                document.getElementById('categoryName').classList.add('is-invalid');
-                document.querySelector('#categoryName + .invalid-feedback').textContent = 'Category name is required.';
+                $('#categoryName').addClass('is-invalid');
+                $('#categoryName').next('.invalid-feedback').text('Category name is required.');
                 isValid = false;
             }
 
@@ -213,43 +196,42 @@
 
             const url = categoryData.Id === 0 ? '/Categories/CreateCategory' : '/Categories/UpdateCategory';
             
-            fetch(url, {
-                method: 'POST',
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(categoryData),
                 headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
                 },
-                body: JSON.stringify(categoryData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                hideSpinner('saveCategoryBtn');
-                
-                if (data.success) {
-                    showSuccess(data.message);
-                    bootstrap.Modal.getInstance(document.getElementById('categoryModal')).hide();
+                success: function(data) {
+                    hideSpinner('saveCategoryBtn');
                     
-                    if (categoryData.Id === 0) {
-                        // Add new row to table
-                        addRowToTable(data.data);
+                    if (data.success) {
+                        showSuccess(data.message);
+                        $('#categoryModal').modal('hide');
+                        
+                        if (categoryData.Id === 0) {
+                            // Add new row to table
+                            addRowToTable(data.data);
+                        } else {
+                            // Update existing row
+                            updateRowInTable(data.data);
+                        }
                     } else {
-                        // Update existing row
-                        updateRowInTable(data.data);
+                        showError(data.message);
                     }
-                } else {
-                    showError(data.message);
+                },
+                error: function(xhr, status, error) {
+                    hideSpinner('saveCategoryBtn');
+                    console.error('Error:', error);
+                    showError('An error occurred while saving the category.');
                 }
-            })
-            .catch(error => {
-                hideSpinner('saveCategoryBtn');
-                console.error('Error:', error);
-                showError('An error occurred while saving the category.');
             });
         }
 
         // Add new row to table
         function addRowToTable(category) {
-            const tbody = document.querySelector('#categoriesTable tbody');
             const statusBadge = category.isActive ? 
                 '<span class="badge bg-success">Active</span>' : 
                 '<span class="badge bg-danger">Inactive</span>';
@@ -272,64 +254,61 @@
                     </td>
                 </tr>`;
             
-            tbody.insertAdjacentHTML('afterbegin', newRow);
+            $('#categoriesTable tbody').prepend(newRow);
         }
 
         // Update existing row in table
         function updateRowInTable(category) {
-            const row = document.getElementById(`row-${category.id}`);
-            if (row) {
+            const $row = $(`#row-${category.id}`);
+            if ($row.length) {
                 const statusBadge = category.isActive ? 
                     '<span class="badge bg-success">Active</span>' : 
                     '<span class="badge bg-danger">Inactive</span>';
                 
-                row.cells[1].textContent = category.name;
-                row.cells[2].textContent = category.description;
-                row.cells[5].innerHTML = statusBadge;
+                $row.find('td').eq(1).text(category.name);
+                $row.find('td').eq(2).text(category.description);
+                $row.find('td').eq(5).html(statusBadge);
             }
         }
 
+        
         // Open delete modal
         function openDeleteModal(id, name) {
             currentCategoryId = id;
-            document.getElementById('deleteItemName').textContent = name;
-            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-            modal.show();
+            $('#deleteItemName').text(name);
+            $('#deleteModal').modal('show');
         }
 
         // Delete category
         function deleteCategory() {
             showSpinner('confirmDeleteBtn');
             
-            fetch('/Categories/DeleteCategory', {
-                method: 'POST',
+            $.ajax({
+                url: `/Categories/DeleteCategory/${currentCategoryId}`,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(currentCategoryId),
                 headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
                 },
-                body: JSON.stringify(currentCategoryId)
-            })
-            .then(response => response.json())
-            .then(data => {
-                hideSpinner('confirmDeleteBtn');
-                
-                if (data.success) {
-                    showSuccess(data.message);
-                    bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                success: function(data) {
+                    hideSpinner('confirmDeleteBtn');
                     
-                    // Remove row from table
-                    const row = document.getElementById(`row-${currentCategoryId}`);
-                    if (row) {
-                        row.remove();
+                    if (data.success) {
+                        showSuccess(data.message);
+                        $('#deleteModal').modal('hide');
+                        
+                        // Remove row from table
+                        $(`#row-${currentCategoryId}`).remove();
+                    } else {
+                        showError(data.message);
                     }
-                } else {
-                    showError(data.message);
+                },
+                error: function(xhr, status, error) {
+                    hideSpinner('confirmDeleteBtn');
+                    console.error('Error:', error);
+                    showError('An error occurred while deleting the category.');
                 }
-            })
-            .catch(error => {
-                hideSpinner('confirmDeleteBtn');
-                console.error('Error:', error);
-                showError('An error occurred while deleting the category.');
             });
         }
 
@@ -344,21 +323,17 @@
         }
 
         // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add CSRF token to all AJAX requests
-            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        $(document).ready(function() {
+            // Setup AJAX defaults for CSRF token
+            const token = $('input[name="__RequestVerificationToken"]').val();
             if (token) {
-                // Set default headers for all fetch requests
-                const originalFetch = window.fetch;
-                window.fetch = function(url, options = {}) {
-                    if (!options.headers) options.headers = {};
-                    if (typeof options.headers.append === 'function') {
-                        options.headers.append('RequestVerificationToken', token);
-                    } else {
-                        options.headers['RequestVerificationToken'] = token;
+                $.ajaxSetup({
+                    beforeSend: function(xhr, settings) {
+                        if (settings.type !== 'GET') {
+                            xhr.setRequestHeader('RequestVerificationToken', token);
+                        }
                     }
-                    return originalFetch(url, options);
-                };
+                });
             }
         });
     </script>

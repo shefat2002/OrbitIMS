@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="~/lib/toastr/toastr.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/OrbitIMS.styles.css" asp-append-version="true" />
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
 </head>
 <body>
     <header>
@@ -65,8 +68,25 @@
     <script src="~/lib/toastr/toastr.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
-    <!-- Toastr Global Configuration -->
+    
     <script>
+
+        // Show loading spinner
+        function showSpinner(buttonId) {
+            const button = document.getElementById(buttonId);
+            const spinner = button.querySelector('.spinner-border');
+            spinner.classList.remove('d-none');
+            button.disabled = true;
+        }
+
+        // Hide loading spinner
+        function hideSpinner(buttonId) {
+            const button = document.getElementById(buttonId);
+            const spinner = button.querySelector('.spinner-border');
+            spinner.classList.add('d-none');
+            button.disabled = false;
+        }
+
         // Configure Toastr globally
         toastr.options = {
             "closeButton": true,

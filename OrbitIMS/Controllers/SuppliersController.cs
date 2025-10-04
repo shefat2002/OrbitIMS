@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OrbitIMS.Data;
+using OrbitIMS.Helpers;
 
 namespace OrbitIMS.Controllers
 {
@@ -19,148 +20,103 @@ namespace OrbitIMS.Controllers
             return View(await _context.Suppliers.ToListAsync());
         }
 
-        // GET: Suppliers/Details/5
-        public async Task<IActionResult> Details(int? id)
+        // AJAX method to get supplier data for editing
+        [HttpGet]
+        public async Task<IActionResult> GetSupplier(int id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var supplier = await _context.Suppliers
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (supplier == null)
-            {
-                return NotFound();
-            }
-
-            return View(supplier);
-        }
-
-        // GET: Suppliers/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: Suppliers/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Email,Mobile,Address")] Supplier supplier)
-        {
-            if (ModelState.IsValid)
-            {
-                supplier.CreatedAt = DateTime.Now;
-                supplier.CreatedBy = User.Identity.Name ?? "Default";
-                supplier.IsActive = true;
-                _context.Add(supplier);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            else
-            {
-                string msg = "";
-                foreach (var err in ModelState.Values)
-                {
-                    foreach (var ms in err.Errors)
-                    {
-                        msg += $"{ms.ErrorMessage}\n";
-                    }
-                }
-                ModelState.AddModelError("", msg);
-            }
-            return View(supplier);
-        }
-
-        // GET: Suppliers/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
             var supplier = await _context.Suppliers.FindAsync(id);
             if (supplier == null)
             {
-                return NotFound();
+                return Json(NotificationHelper.CreateNotificationResponse(false, "Supplier not found"));
             }
-            return View(supplier);
+            return Json(NotificationHelper.CreateNotificationResponse(true, "Supplier loaded successfully", supplier));
         }
 
-        // POST: Suppliers/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // AJAX method to create supplier
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Name,Email,Mobile,Address,Id,CreatedAt,CreatedBy,UpdatedAt,UpdatedBy,IsActive")] Supplier supplier)
+        public async Task<IActionResult> CreateSupplier([FromBody] Supplier supplier)
         {
-            if (id != supplier.Id)
+            try
             {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
+                if (ModelState.IsValid)
                 {
-                    _context.Update(supplier);
+                    supplier.CreatedAt = DateTime.Now;
+                    supplier.CreatedBy = User.Identity.Name ?? "Default";
+                    supplier.IsActive = true;
+                    _context.Add(supplier);
                     await _context.SaveChangesAsync();
+                    return Json(NotificationHelper.CreateNotificationResponse(true, "Supplier created successfully", supplier));
                 }
-                catch (DbUpdateConcurrencyException)
+                else
                 {
-                    if (!SupplierExists(supplier.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                    return Json(NotificationHelper.CreateNotificationResponse(false, string.Join(", ", errors)));
                 }
-                return RedirectToAction(nameof(Index));
             }
-            return View(supplier);
+            catch (Exception ex)
+            {
+                return Json(NotificationHelper.CreateNotificationResponse(false, "Error creating supplier: " + ex.Message));
+            }
         }
 
-        // GET: Suppliers/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        // AJAX method to update supplier
+        [HttpPost]
+        public async Task<IActionResult> UpdateSupplier([FromBody] Supplier supplier)
         {
-            if (id == null)
+            try
             {
-                return NotFound();
-            }
+                if (ModelState.IsValid)
+                {
+                    var existingSupplier = await _context.Suppliers.FindAsync(supplier.Id);
+                    if (existingSupplier == null)
+                    {
+                        return Json(NotificationHelper.CreateNotificationResponse(false, "Supplier not found"));
+                    }
 
-            var supplier = await _context.Suppliers
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (supplier == null)
+                    existingSupplier.Name = supplier.Name;
+                    existingSupplier.Email = supplier.Email;
+                    existingSupplier.Mobile = supplier.Mobile;
+                    existingSupplier.Address = supplier.Address;
+                    existingSupplier.UpdatedAt = DateTime.Now;
+                    existingSupplier.UpdatedBy = User.Identity.Name ?? "Default";
+
+                    _context.Update(existingSupplier);
+                    await _context.SaveChangesAsync();
+                    return Json(NotificationHelper.CreateNotificationResponse(true, "Supplier updated successfully", existingSupplier));
+                }
+                else
+                {
+                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                    return Json(NotificationHelper.CreateNotificationResponse(false, string.Join(", ", errors)));
+                }
+            }
+            catch (Exception ex)
             {
-                return NotFound();
+                return Json(NotificationHelper.CreateNotificationResponse(false, "Error updating supplier: " + ex.Message));
             }
-
-            return View(supplier);
         }
 
-        // POST: Suppliers/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        // AJAX method to delete supplier
+        [HttpPost]
+        public async Task<IActionResult> DeleteSupplier(int id)
         {
-            var supplier = await _context.Suppliers.FindAsync(id);
-            if (supplier != null)
+            try
             {
+                var supplier = await _context.Suppliers.FindAsync(id);
+                if (supplier == null)
+                {
+                    return Json(NotificationHelper.CreateNotificationResponse(false, "Supplier not found"));
+                }
+
                 _context.Suppliers.Remove(supplier);
+                await _context.SaveChangesAsync();
+                return Json(NotificationHelper.CreateNotificationResponse(true, "Supplier deleted successfully"));
             }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            catch (Exception ex)
+            {
+                return Json(NotificationHelper.CreateNotificationResponse(false, "Error deleting supplier: " + ex.Message));
+            }
         }
 
-        private bool SupplierExists(int id)
-        {
-            return _context.Suppliers.Any(e => e.Id == id);
-        }
     }
 }
