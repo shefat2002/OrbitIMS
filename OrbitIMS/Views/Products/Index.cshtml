@@ -177,22 +177,6 @@
         let categoriesData = [];
         let suppliersData = [];
 
-        // Show loading spinner
-        function showSpinner(buttonId) {
-            const button = document.getElementById(buttonId);
-            const spinner = button.querySelector('.spinner-border');
-            spinner.classList.remove('d-none');
-            button.disabled = true;
-        }
-
-        // Hide loading spinner
-        function hideSpinner(buttonId) {
-            const button = document.getElementById(buttonId);
-            const spinner = button.querySelector('.spinner-border');
-            spinner.classList.add('d-none');
-            button.disabled = false;
-        }
-
         // Clear form validation
         function clearValidation() {
             document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
