@@ -1,0 +1,174 @@
+﻿@using OrbitIMS.Data
+@model OrbitIMS.Data.Order
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+ 
+
+<h4>Order</h4>
+<hr />
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="OrderDate" class="control-label"></label>
+                <input asp-for="OrderDate" class="form-control" />
+                <span asp-validation-for="OrderDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="TotalAmount" class="control-label"></label>
+                <input asp-for="TotalAmount" class="form-control"  readonly/>
+                <span asp-validation-for="TotalAmount" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Status" class="control-label"></label>
+                <select asp-for="Status" class="form-control" asp-items="@Html.GetEnumSelectList<OrderStatus>()"></select>
+                <span asp-validation-for="Status" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CustomerId" class="control-label"></label>
+                <select asp-for="CustomerId" class ="form-control" asp-items="ViewBag.CustomerId"></select>
+            </div>
+           
+           <div>
+               <button id="btnAdd" class="btn btn-dark" >Add</button>
+               <table class="table table-bordered" id="tblOrderdetails">
+                    <thead>
+                        <tr>
+                            <td>Serial</td>
+                            <td>Product</td>
+                             <td>Quantity</td>
+                            <td>Price</td>
+                            <td>Total Price</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                       @{
+                            for (int i = 0; i < Model.OrderDetails.Count; i++)
+                            {
+                                <tr>
+  <td class="serial">  @Html.Raw(i+1)</td>
+                                    <td>
+                                        <select id="ddlTemplate" name="OrderDetails[@i].ProductId" class="form-control" asp-items="ViewBag.ProductId"></select>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="OrderDetails[@i].Quantity" onchange="calculateSubtotal()" class="form-control" />
+                                    </td>
+                                    <td>
+                                        <input type="number" name="OrderDetails[@i].UnitPrice" onchange="calculateSubtotal()" class="form-control" />
+                                    </td>
+                                    <td>
+                                        <input type="number" name="OrderDetails[@i].TotalPrice" class="form-control" readonly />
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-danger mb-2" onchange="calculateSubtotal()">Remove</button>
+                                    </td>
+                                </tr>
+                            }
+                       }
+                       
+                    </tbody>
+                </table>
+           </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+
+
+$(document).ready(function () {
+    $(".btn-danger").hide();
+    $("#btnAdd").click(function (e) {
+        e.preventDefault();
+
+        var index = $("#tblOrderdetails tbody tr").length;
+                        showhidebtn(index)
+        // get template options
+        var options = $("#ddlTemplate").html();
+
+        var newRow = `<tr>
+                         <td class="serial">${index + 1}</td>
+                         <td>
+                             <select name="OrderDetails[${index}].ProductId" class="form-control">
+                                 ${options}
+                             </select>
+                         </td>
+                                 <td><input type="number" name="OrderDetails[${index}].Quantity"  onchange="calculateSubtotal()"  class="form-control" /></td>
+                                 <td><input type="number" name="OrderDetails[${index}].Price" onchange="calculateSubtotal()"  class="form-control" /></td>
+                                 <td><input type="number" name="OrderDetails[${index}].TotalPrice"    class="form-control" /></td>
+                                 <td><button type="button" class="btn btn-danger btn-remove" onchange="calculateSubtotal()" >Remove</button></td>
+                     </tr>`;
+
+        $("#tblOrderdetails tbody").append(newRow);
+    });
+
+    // Remove button
+    $(document).on("click", ".btn-remove", function () {
+        $(this).closest("tr").remove();
+                 var index = $("#tblOrderdetails tbody tr").length;
+                                showhidebtn(index)
+        reindexRows();
+              
+    });
+
+    // Reindex after remove
+    function reindexRows() {
+        $("#tblOrderdetails tbody tr").each(function (i, row) {
+                    $(row).find("td.serial").text(i + 1);
+            $(row).find("select, input").each(function () {
+                var name = $(this).attr("name");
+                if (name) {
+                    $(this).attr("name", name.replace(/\[\d+\]/, `[${i}]`));
+                }
+            });
+        });
+    }
+    function showhidebtn(i){
+
+        if(Number(i) ===1){
+                    $(".btn-danger").hide();
+        }
+        else
+        {
+                      $(".btn-danger").show();
+        }
+    }
+  
+
+});//document
+          function calculateSubtotal(){
+                        var total = 0.00;
+                      //  debugger;
+                            var tblbody = $("#tblOrderdetails").find("tbody")
+                            tblbody.find('tr').each(function () {
+                                        console.log($(this).find("td:eq(2) input[type=number]").val())
+                                        var quantity = $(this).find("td:eq(2) input[type=number]").val();
+                                        var unitprice = $(this).find("td:eq(3) input[type=number]").val();
+
+                                var subtotal = (quantity * unitprice)
+                                total = total + subtotal
+                                console.log("quantity" + quantity)
+                                console.log("unitprice" + unitprice)
+                              
+                                console.log(total)
+                                console.log(subtotal)
+                                        $(this).find("td:eq(4) input[type=number]").val(subtotal);
+                                        $("#TotalAmount").val(total);
+                            })
+            }
+    </script>
+
+}

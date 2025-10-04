@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OrbitIMS.Data;
+using OrbitIMS.Helpers;
 
 namespace OrbitIMS.Controllers
 {
@@ -17,6 +18,104 @@ namespace OrbitIMS.Controllers
         public async Task<IActionResult> Index()
         {
             return View(await _context.Customers.ToListAsync());
+        }
+
+        // AJAX method to get customer data for editing
+        [HttpGet]
+        public async Task<IActionResult> GetCustomer(int id)
+        {
+            var customer = await _context.Customers.FindAsync(id);
+            if (customer == null)
+            {
+                return Json(NotificationHelper.CreateNotificationResponse(false, "Customer not found"));
+            }
+            return Json(NotificationHelper.CreateNotificationResponse(true, "Customer loaded successfully", customer));
+        }
+
+        // AJAX method to create customer
+        [HttpPost]
+        public async Task<IActionResult> CreateCustomer([FromBody] Customer customer)
+        {
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    customer.CreatedAt = DateTime.Now;
+                    customer.CreatedBy = User.Identity.Name ?? "Default";
+                    customer.IsActive = true;
+                    _context.Add(customer);
+                    await _context.SaveChangesAsync();
+                    return Json(NotificationHelper.CreateNotificationResponse(true, "Customer created successfully", customer));
+                }
+                else
+                {
+                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                    return Json(NotificationHelper.CreateNotificationResponse(false, string.Join(", ", errors)));
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(NotificationHelper.CreateNotificationResponse(false, "Error creating customer: " + ex.Message));
+            }
+        }
+
+        // AJAX method to update customer
+        [HttpPost]
+        public async Task<IActionResult> UpdateCustomer([FromBody] Customer customer)
+        {
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    var existingCustomer = await _context.Customers.FindAsync(customer.Id);
+                    if (existingCustomer == null)
+                    {
+                        return Json(NotificationHelper.CreateNotificationResponse(false, "Customer not found"));
+                    }
+
+                    existingCustomer.Name = customer.Name;
+                    existingCustomer.Email = customer.Email;
+                    existingCustomer.Mobile = customer.Mobile;
+                    existingCustomer.Address = customer.Address;
+                    existingCustomer.UpdatedAt = DateTime.Now;
+                    existingCustomer.UpdatedBy = User.Identity.Name ?? "Default";
+
+                    _context.Update(existingCustomer);
+                    await _context.SaveChangesAsync();
+                    return Json(NotificationHelper.CreateNotificationResponse(true, "Customer updated successfully", existingCustomer));
+                }
+                else
+                {
+                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                    return Json(NotificationHelper.CreateNotificationResponse(false, string.Join(", ", errors)));
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(NotificationHelper.CreateNotificationResponse(false, "Error updating customer: " + ex.Message));
+            }
+        }
+
+        // AJAX method to delete customer
+        [HttpPost]
+        public async Task<IActionResult> DeleteCustomer(int id)
+        {
+            try
+            {
+                var customer = await _context.Customers.FindAsync(id);
+                if (customer == null)
+                {
+                    return Json(NotificationHelper.CreateNotificationResponse(false, "Customer not found"));
+                }
+
+                _context.Customers.Remove(customer);
+                await _context.SaveChangesAsync();
+                return Json(NotificationHelper.CreateNotificationResponse(true, "Customer deleted successfully"));
+            }
+            catch (Exception ex)
+            {
+                return Json(NotificationHelper.CreateNotificationResponse(false, "Error deleting customer: " + ex.Message));
+            }
         }
 
         // GET: Customers/Details/5
@@ -57,6 +156,7 @@ namespace OrbitIMS.Controllers
                 customer.IsActive = true;
                 _context.Add(customer);
                 await _context.SaveChangesAsync();
+                this.SetSuccessMessage("Customer created successfully!");
                 return RedirectToAction(nameof(Index));
             }
             else
@@ -69,7 +169,7 @@ namespace OrbitIMS.Controllers
                         msg += $"{ms.ErrorMessage}\n";
                     }
                 }
-                ModelState.AddModelError("", msg);
+                this.SetErrorMessage(msg);
             }
             return View(customer);
         }
@@ -108,6 +208,7 @@ namespace OrbitIMS.Controllers
                 {
                     _context.Update(customer);
                     await _context.SaveChangesAsync();
+                    this.SetSuccessMessage("Customer updated successfully!");
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -152,9 +253,14 @@ namespace OrbitIMS.Controllers
             if (customer != null)
             {
                 _context.Customers.Remove(customer);
+                await _context.SaveChangesAsync();
+                this.SetSuccessMessage("Customer deleted successfully!");
+            }
+            else
+            {
+                this.SetErrorMessage("Customer not found!");
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

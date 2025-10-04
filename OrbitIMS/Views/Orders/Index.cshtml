@@ -1,5 +1,229 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model IEnumerable<OrbitIMS.Data.Order>
+
 @{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.OrderDate)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.TotalAmount)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Status)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Customer)
+            </th>
+
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model) {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.OrderDate)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.TotalAmount)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Status)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Customer.Name)
+                </td>
+
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="5">
+
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <td>
+                                    Product
+                                </td>
+                                <td>
+                                    Quantity
+                                </td>
+                                <td>
+                                    Price
+                                </td>
+                                <td>
+                                    Total Price
+                                </td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var d in item.OrderDetails)
+                            {
+                                <tr>
+                                    <td>
+                                        @Html.DisplayFor(modelItem => d.Id)
+                                    </td>
+                                    <td>
+                                        @Html.DisplayFor(modelItem => d.Product.Name)
+                                    </td>
+                                    <td>
+                                        @Html.DisplayFor(modelItem => d.Quantity)
+                                    </td>
+                                    <td>
+                                        @Html.DisplayFor(modelItem => d.UnitPrice)
+                                    </td>
+                                    <td>
+                                        @Html.DisplayFor(modelItem => d.TotalPrice)
+                                    </td>
+
+                                    <td>
+                                        <button onclick="Edit(@d.Id)"  >Edit</button> |
+                                        <a asp-action="Details" asp-route-id="@d.Id">Details</a> |
+                                        <a asp-action="Delete" asp-route-id="@d.Id">Delete</a>
+                                    </td>
+                                </tr>}
+
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+@* Edit Modal *@
+
+
+@* <!-- Button trigger modal -->
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
+    Launch demo modal
+</button>
+ *@
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <form asp-action="Edit">
+                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                            <div class="form-group">
+                                <label id="OrderIdlbl" class="control-label">OrderId</label>
+                                <input id="OrderId" class="form-control" />
+                               
+                            </div>
+                            <div class="form-group">
+                                <label id="ProductIdlbl" class="control-label"> Product</label>
+                                <input id="ProductId" class="form-control" asp-items="@ViewBag.ProductId"/>
+                            </div>
+                            <div class="form-group">
+                                <label id="Quantitylbl" class="control-label">Quantity</label>
+                                <input id="Quantity" class="form-control" />
+                                
+                            </div>
+                            <div class="form-group">
+                                <label id="UnitPricelbl" class="control-label">Unit Price</label>
+                                <input id="UnitPrice" class="form-control" />
+                               
+                            </div>
+                            <div class="form-group">
+                                <label id="TotalPricelbl" class="control-label">Total Price</label>
+                                <input id="TotalPrice" class="form-control" />
+                                
+                            </div>
+                            <input type="hidden" id="Id" />
+                           
+                            
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="btnUpdate">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section scripts{
+    <script>
+            $(document).ready(function(){
+                $("#btnUpdate").click(function(){
+
+                       $.ajax({
+              url:'/OrderDetails/Update/',
+               type:'POST',
+               data:{
+                Id:    $('#Id').val(),
+                OrderId:   $("#OrderId").val(),
+               ProductId:    $("#ProductId").val(),
+                 Quantity:  $("#Quantity").val(),
+              UnitPrice:     $("#UnitPrice").val(),
+               TotalPrice:    $("#TotalPrice").val()
+               },
+               success:function(res){
+                   console.log(res)
+                  
+
+            $("#exampleModal").modal('hide')
+            clearALL();
+               },
+               error:function(err){
+               console.log(err)
+               }
+           })
+                })
+            })
+        function Edit(id){
+            
+           $.ajax({
+              url:'/OrderDetails/GetById/'+id,
+               type:'GET',
+               success:function(res){
+                   console.log(res)
+                   $('#Id').val(res.id)
+                   $("#OrderId").val(res.orderId)
+                   $("#ProductId").val(res.productId)
+                   $("#Quantity").val(res.quantity)
+                   $("#UnitPrice").val(res.unitPrice)
+                   $("#TotalPrice").val(res.totalPrice)
+               
+            $("#exampleModal").modal('show')
+               },
+               error:function(err){
+               console.log(err)
+               }
+           })
+
+        }
+        function clearALL(){
+              $('#Id').val(res.id)
+                   $("#OrderId").val('')
+                   $("#ProductId").val('')
+                   $("#Quantity").val('')
+                   $("#UnitPrice").val(0)
+                   $("#TotalPrice").val('')
+        }
+    </script>
 }
